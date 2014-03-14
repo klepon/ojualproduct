@@ -2,3 +2,55 @@
 $modulesPath = 'sites/all/modules/ojualproduct/';
 include_once($modulesPath. 'inc/function.php');
 
+define('OJUALPRODUCT', 'ojualproduct');
+define('OJUALCATEGORY', 'ojualcategory');
+define('OJUAL_CATEGORY', 'ojual_category');
+define('OJUAL_TAXO_DATA', 'ojual_taxo_data'); // change this to follow ojualproduct_taxo_name description
+
+/* ================================================================================
+module setting on admin
+================================================================================= */
+// menu seting user to premium
+function ojualproduct_menu() {
+	$items = array();
+	$items['admin/settings/ojual-product'] = array(
+		'title' => 'Ojual Product',
+		'description' => 'Ojual Product setting page',
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('ojualproduct_admin'),
+		'access arguments' => array('administer users'),
+		'type' => MENU_NORMAL_ITEM,
+	);
+	return $items;
+}
+
+function ojualproduct_admin() {
+	$form = array();
+
+	$form['ojualproduct_node_type'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Node type for product detail'),
+		'#default_value' => variable_get('ojualproduct_node_type', OJUALPRODUCT),
+		'#description' => t('Machine name of node type for product detail'),
+		'#required' => TRUE
+	);
+
+	$form['ojualproduct_taxo_name'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Taxonomy for category'),
+		'#default_value' => variable_get('ojualproduct_taxo_name', OJUALCATEGORY),
+		'#description' => t('Machine of taxonomy name for category<br />The item term need to have textarea field named "ojual_taxo_data"<br />In this field write each line for the product:<br />field machine name | field type | rendered type (plain|default) | label position (none, above, left) | tpl (optional, ie: &lt;a href="%s"&gt;link &lt;/a&gt;)'),
+		'#required' => TRUE
+	);
+
+	$form['ojualproduct_category_field'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Category field in product detail'),
+		'#default_value' => variable_get('ojualproduct_category_field', OJUAL_CATEGORY),
+		'#description' => t('Machine of category field for product detail'),
+		'#required' => TRUE
+	);
+
+
+	return system_settings_form($form);
+}

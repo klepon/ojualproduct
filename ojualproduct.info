@@ -3,3 +3,4 @@ description = To manage product and all it's stuff and function
 version = 1.0
 package = Klepon
 core = 7.x
+dependencies[] = ojualuser
