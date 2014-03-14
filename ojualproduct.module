@@ -1,0 +1,4 @@
+<?php 
+$modulesPath = 'sites/all/modules/ojualproduct/';
+include_once($modulesPath. 'inc/function.php');
+
