@@ -39,6 +39,7 @@ function ojualproduct_menu() {
 function ojualproduct_admin() {
 
 	// tester
+	/*
 	$vid = 2;
 	$fieldName = 'field_test2'; // nanti jadi index array
 	$fieldData = array('taxonomy_term_reference', 'Category2', 'options_select', '', 
@@ -87,6 +88,7 @@ function ojualproduct_admin() {
 
 	if(field_create_field($field))
 		field_create_instance($instance);
+		*/
 	// tester end
 
 
