@@ -37,62 +37,14 @@ function ojualproduct_menu() {
 }
 
 function ojualproduct_admin() {
+	// variable_del('ojualproduct_setup_node');
 
-	// tester
-	/*
-	$vid = 2;
-	$fieldName = 'field_test2'; // nanti jadi index array
-	$fieldData = array('taxonomy_term_reference', 'Category2', 'options_select', '', 
-		array(
-		    'allowed_values' => array(
-		      array(
-		        'vocabulary' => OJUAL_CATEGORY,
-		        'parent' => 0
-		      ),
-		    )
-		), 
-		array(
-			'allowed_values' => array(
-				array('vid' => $vid, 'parent' => 0)
-			)
-		)
-	);
-
-	// start create field
-	$field = array(
-		'field_name'    => $fieldName,
-		'type'          => $fieldData[0],
-	);
-
-	if(!empty($fieldData[4])) {
-		$field['settings'] = $fieldData[4];
+	$setupNode = variable_get('ojualproduct_setup_node', 'false');
+	if($setupNode == 'false') {
+		ojualproduct_manual_install();
+		variable_set('ojualproduct_setup_node', 'true');
+		drupal_set_message('Relax, everything is setup correctly<br />Content type and taxonomy created successfully<br />Reorder the field to fit your need');
 	}
-
-	
-
-	$instance = array(
-		'field_name'    => $fieldName,
-		'entity_type'   => 'node',
-		'bundle'        => OJUAL_PRODUCT,
-		'label'         => t($fieldData[1]),
-		'description'   => t($fieldData[3]),
-	    'widget' => array(
-	      'type' => $fieldData[2],
-	      'weight' => 3,
-	    )
-	);
-
-	if(!empty($fieldData[5])) {
-		$instance['settings'] = $fieldData[5];
-	}
-
-	if(field_create_field($field))
-		field_create_instance($instance);
-		*/
-	// tester end
-
-
-
 
 	$form = array();
 
@@ -115,7 +67,7 @@ function ojualproduct_admin() {
 		- include my footnote (ye/no to include user footnote) checkbox - %8$s<br />
 	';
 
-	$tplNodeType = 'Machine name of node type for product detail<br />This node type must have all field for all product category.Below are global field and will use cross category:<br />%s';
+	$tplNodeType = 'This node type must have all field for all product category.<br />Below are global field and will use cross category:<br />%s';
 
 	$desc = sprintf($tplNodeType, sprintf($tplNodeTypeItem, FIELD_OJUAL_product_category, FIELD_OJUAL_product_type, FIELD_OJUAL_product_status, FIELD_OJUAL_product_stock, FIELD_OJUAL_free_shipping, FIELD_OJUAL_fixed_price, FIELD_OJUAL_product_price, FIELD_OJUAL_include_my_footnote));
 
@@ -131,7 +83,7 @@ function ojualproduct_admin() {
 		'#type' => 'textfield',
 		'#title' => t('Taxonomy for category'),
 		'#default_value' => variable_get('ojualproduct_taxo_name', OJUAL_CATEGORY),
-		'#description' => t('Machine of taxonomy name for category<br />In term item description field write each line for the product node information:<br />field machine name | field type | required/optional | rendered type (plain|default) | label position (none, above, left) | tpl (ie: &lt;a href="%s"&gt;link &lt;/a&gt;)<br />example:<br />field_dress_size|text|required|plain|left|%s<br /><b>And set text format as Plain text</b><br />Also don\'t forget the friendly url<br />A bit advise for furl<br />- if parent category not used than: fashion-women-dress.html<br />- if parent catgory in use: fashion/women/dress.html'),
+		'#description' => t('Machine of taxonomy name for category<br />In term item description field write each line for the product node information:<br />field machine name | field type | required/optional | rendered type (plain|default) | label position (none, above, left) | tpl (ie: &lt;a href="%s"&gt;link &lt;/a&gt;)<br />example:<br />field_dress_size|text|required|plain|left|%s<br /><b>And set text format as Plain text</b><br /><br />Also don\'t forget the friendly url<br />A bit advise for furl<br />- if parent category not used than: fashion-women-dress.html<br />- if parent catgory in use: fashion/women/dress.html'),
 		'#required' => TRUE
 	);
 
@@ -142,9 +94,6 @@ function ojualproduct_admin() {
 	alter product form
 ================================================================================= */
 function ojualproduct_form_alter(&$form, $form_state, $form_id) {
-	
-	// return;
-	
 	global $base_url;	
 
 	$productNode = variable_get('ojualproduct_node_type', OJUAL_PRODUCT);
@@ -190,9 +139,10 @@ function ojualproduct_form_alter(&$form, $form_state, $form_id) {
 			((isset($_GET['ojual_cat']) && in_array($_GET['ojual_cat'], $validCatId)) 
 				? 'seted' : 'unseted');
 
-		// show category selection if not yet choosing any catgory
+		// show category selection if not yet choosing any category
 		if($catStatus == 'unseted') {
 			// show category term to choose
+			$validCatTerm = empty($validCatTerm) ? 'No category has been created yet, create the new one or two for the product' : $validCatTerm;
 			$form['category_chooser'] = array(
 			  '#markup' => $validCatTerm
 			);
@@ -258,10 +208,7 @@ function ojualproduct_form_alter(&$form, $form_state, $form_id) {
 /* ================================================================================
 	create product type and it's cross category field
 ================================================================================= */
-function ojualproduct_install() {
-
-	return;
-
+function ojualproduct_manual_install() {
 	// create vocabulary
 	$defCat = taxonomy_vocabulary_machine_name_load(OJUAL_CATEGORY);
 	if(!$defCat) {
@@ -275,15 +222,15 @@ function ojualproduct_install() {
 	}
 
 	// create content type
-	if (!in_array('product_page', node_type_get_names())) {
+	if (!in_array(OJUAL_PRODUCT, node_type_get_names())) {
 		$type = array(
-			'type' => 'product_page',
-			'name' => t('Product page'),
+			'type' => OJUAL_PRODUCT,
+			'name' => t('Product page for all category'),
 			'base' => 'node_content',
 			'custom' => 1,
 			'modified' => 1,
 			'locked' => 0,
-			'title_label' => 'Product page for all'
+			'title_label' => 'Product name'
 		);
 
 		$type = node_type_set_defaults($type);
@@ -293,95 +240,175 @@ function ojualproduct_install() {
 
 	// create cross category field
 	$ccf = array(
-		FIELD_OJUAL_product_category => array('taxonomy_term_reference', 'Category', 'options_select', '', array(), array(
+		// field_name => array('field type', 'label', 'description', array(field settings), array(field widget), array(field instant settings))
+		FIELD_OJUAL_product_category => array('taxonomy_term_reference', 'Category', '', 
+			array(
+			    'allowed_values' => array(
+			      array(
+			        'vocabulary' => OJUAL_CATEGORY,
+			        'parent' => 0
+			      ),
+			    )
+			),
+			array(
+				'type' => 'options_select',
+				'weight' => 3,
+		    ),
+			array(
 				'allowed_values' => array(
 					array('vid' => $vid, 'parent' => 0)
 				)
-			)
+			),
+			true
 		), 
-		FIELD_OJUAL_product_type => array('list_boolean', 'Condition', 'options_onoff', '', array()), 
-		FIELD_OJUAL_product_status => array('list_integer', 'Availability', 'options_buttons', '', array()), 
-		FIELD_OJUAL_product_stock => array('', '', '', '', array()), 
-		FIELD_OJUAL_free_shipping => array('', '', '', '', array()), 
-		FIELD_OJUAL_fixed_price => array('', '', '', '', array()), 
-		FIELD_OJUAL_product_price => array('', '', '', '', array()), 
-		FIELD_OJUAL_include_my_footnote => array('', '', '', '', array())
+		FIELD_OJUAL_product_type => array('list_boolean', 'Condition', '', 
+			array(
+			    'allowed_values' => array(
+					'0' => 'Used',
+					'1' => 'New',
+			    ),
+			),
+			array(
+				'type' => 'options_buttons',
+				// 'settings' => array('display_label' => 1),
+				'weight' => 3,
+		    ),
+			array(
+			),
+			true
+		), 
+		FIELD_OJUAL_product_status => array('list_boolean', 'Product status', '', 
+			array(
+			    'allowed_values' => array(
+					'0' => 'For sale',
+					'1' => 'Wanted',
+					'2' => 'Out of stock',
+			    ),
+			),
+			array(
+				'type' => 'options_buttons',
+				'weight' => 3,
+		    ),
+			array(
+			),
+			true
+		), 
+		FIELD_OJUAL_product_stock => array('number_integer', 'Product stock', '', 
+			array(
+			),
+			array(
+				'type' => 'number',
+				'weight' => 3,
+		    ),
+			array(
+			),
+			true
+		), 
+		FIELD_OJUAL_free_shipping => array('list_boolean', 'Free shiping', '', 
+			array(
+			    'allowed_values' => array(
+					'0' => 'no',
+					'1' => 'yes',
+			    ),
+			),
+			array(
+				'type' => 'options_onoff',
+				'settings' => array('display_label' => 1),
+				'weight' => 3,
+		    ),
+			array(
+			),
+			false
+		), 
+		FIELD_OJUAL_fixed_price => array('list_boolean', 'Negotible', '', 
+			array(
+			    'allowed_values' => array(
+					'0' => 'no',
+					'1' => 'yes',
+			    ),
+			),
+			array(
+				'type' => 'options_onoff',
+				'settings' => array('display_label' => 1),
+				'weight' => 3,
+		    ),
+			array(
+			),
+			false
+		), 
+		FIELD_OJUAL_product_price => array('number_integer', 'Price', '', 
+			array(
+			),
+			array(
+				'type' => 'number',
+				'weight' => 3,
+		    ),
+			array(
+				'settings' => array('prefix' => 'Rp '),
+			),
+			true
+		), 
+		FIELD_OJUAL_include_my_footnote => array('list_boolean', 'Include my signature in product description', '', 
+			array(
+			    'allowed_values' => array(
+					'0' => 'no',
+					'1' => 'yes',
+			    ),
+			),
+			array(
+				'type' => 'options_onoff',
+				'settings' => array('display_label' => 1),
+				'weight' => 3,
+		    ),
+			array(
+			),
+			false
+		)
 	);
 
-	$myField_name = "my_new_field_name";
-	if(!field_info_field($myField_name)) {
-		$field = array(
-			'field_name'    => $myField_name,
-			'type'          => 'image',
-		);
-		field_create_field($field);
+	if(isset($type->type) && isset($vid)) {
+		foreach ($ccf as $fieldName => $fieldData) {
+			$field = array(
+				'field_name'    => $fieldName,
+				'type'          => $fieldData[0],
+			);
 
-		$field_instance = array(
-			'field_name'    => $myField_name,
-			'entity_type'   => 'node',
-			'bundle'        => 'CONTENT_TYPE_NAME',
-			'label'         => t('Select an image'),
-			'description'   => t(''),
-			'widget'        => array(
-				'type'      => 'image_image',
-				'weight'    => 10,
-			),
-			'formatter'     => array(
-				'label'     => t('label'),
-				'format'    => 'image'
-			),
-			'settings'      => array(
-				'file_directory'        => 'photos', // save inside "public://photos"
-				'max_filesize'          => '4M',
-				'preview_image_style'   => 'thumbnail',
-				'title_field'           => TRUE,
-				'alt_field'             => FALSE,
-			)
-		);
+			if(!empty($fieldData[3])) {
+				$field['settings'] = $fieldData[3];
+			}
+			
 
-		$field = array(
-		  'some_field' => array(
-		    'field_name' => 'some_field',
-		    'type'       => 'list_boolean',
-		    'cardinality' => 1,
-		    'settings' => array(
-		      'allowed_values' => array(0 => 0, 1 => 1), //add the default values for the checkbox
-		    ),
-		  ),
-		);
-		$instance = array(
-		  'some_field' => array(
-		    'field_name' => 'some_field',
-		    'label' => $t('My Label'),
-		    'required' => true,
-		    'widget' => array(
-		      'type' => 'options_onoff',
-		      'settings' => array('display_label' => 1),
-		      'weight' => 8,
-		    ),
-		    'settings' => array(
-		      'user_register_form' => 1,
-		    ),
-		  ),
-		);
+			$instance = array(
+				'field_name'    => $fieldName,
+				'entity_type'   => 'node',
+				'bundle'        => OJUAL_PRODUCT,
+				'label'         => t($fieldData[1]),
+				'description'   => t($fieldData[2]),
+				'required'		=> $fieldData[6]
+			);
 
+			if(!empty($fieldData[4])) {
+				$instance['widget'] = $fieldData[4];
+			}
 
-		field_create_instance($field_instance);
-		drupal_set_message("Field created successfully!");
+			if(!empty($fieldData[5])) {
+				$instance['settings'] = $fieldData[5];
+			}
+
+			if(field_create_field($field))
+				field_create_instance($instance);
+		}
 	}
 }
-
-
-
 
 /* ================================================================================
 	add css and js, get from node merger, for debug purpose
 	* we will need this to hide some node setup menu and auto create furl using js
 ================================================================================= */
 function ojualproduct_init() {
-	//kpdebug($_GET['q']);
+	// kpdebug($_GET['q']);
 
-	// return;
+	return;
 
 	// add css and js ke several node admin aja
 	$q = explode('/', $_GET['q']);
@@ -394,7 +421,7 @@ function ojualproduct_init() {
 	// get page using bootstrap style
 	$comNodes = explode("\n", 'ojualproduct');
 
-	if($q[0] == 'node' && ($q[2] == 'edit' || in_array($q[2], $comNodes))) {
+	if($q[0] == 'node' && ($q[2] == 'edit' || ($q[2] = OJUAL_PRODUCT))) {
 		drupal_add_css(drupal_get_path('module', 'nodemerger') . '/css/bootstrap.min.css');
 		drupal_add_css(drupal_get_path('module', 'nodemerger') . '/css/nodemerger.css');
 
@@ -405,7 +432,6 @@ function ojualproduct_init() {
 		drupal_add_js(drupal_get_path('module', 'nodemerger') . '/js/nodemerger.js');
 	}
 }
-
 
 /* ================================================================================
 	helper function
